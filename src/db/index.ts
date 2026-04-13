@@ -1,12 +1,13 @@
-import { drizzle } from "drizzle-orm/better-sqlite3";
-import Database from "better-sqlite3";
-import path from "path";
+import { drizzle } from "drizzle-orm/libsql";
+import { createClient } from "@libsql/client";
 import * as schema from "./schema";
 
-const dbPath = path.join(process.cwd(), "data", "vs-system.db");
-const sqlite = new Database(dbPath);
+const url = process.env.TURSO_DATABASE_URL;
+if (!url) throw new Error("TURSO_DATABASE_URL is not set");
 
-// Enable WAL mode for better performance
-sqlite.pragma("journal_mode = WAL");
+const client = createClient({
+  url,
+  authToken: process.env.TURSO_AUTH_TOKEN,
+});
 
-export const db = drizzle(sqlite, { schema });
+export const db = drizzle(client, { schema });

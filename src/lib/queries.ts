@@ -4,7 +4,7 @@ import { eq, sql, and, asc } from "drizzle-orm";
 
 // --- Sets ---
 export async function getAllSets() {
-  const rows = db.all(sql`
+  const rows = await db.all(sql`
     SELECT s.id, s.code, s.name, s.release_date as releaseDate, s.total_cards as totalCards, s.set_type as setType,
       COALESCE((
         SELECT COUNT(*) FROM collection c
@@ -27,7 +27,7 @@ export async function getSetByCode(code: string) {
 
 // --- Cards ---
 export async function getCardsBySet(setId: number) {
-  const rows = db.all(sql`
+  const rows = await db.all(sql`
     SELECT cd.id, cd.card_number as cardNumber, cd.name, cd.version, cd.card_type as cardType,
       cd.cost, cd.attack, cd.defense, cd.flight, cd.range, cd.team, cd.rarity, cd.image_url as imageUrl,
       COALESCE(c.quantity_en, 0) as quantityEn,
@@ -46,7 +46,7 @@ export async function getCardsBySet(setId: number) {
 }
 
 export async function getCardById(cardId: number) {
-  const rows = db.all(sql`
+  const rows = await db.all(sql`
     SELECT cd.id, cd.card_number as cardNumber, cd.name, cd.version, cd.card_type as cardType,
       cd.cost, cd.attack, cd.defense, cd.flight, cd.range, cd.team, cd.rarity,
       cd.rules_text as rulesText, cd.flavor_text as flavorText, cd.illustrator,
@@ -81,7 +81,7 @@ export async function searchCards(query: string, filters?: {
 
   const whereClause = conditions.join(" AND ");
 
-  const rows = db.all(sql.raw(`
+  const rows = await db.all(sql.raw(`
     SELECT cd.id, cd.card_number as cardNumber, cd.name, cd.version, cd.card_type as cardType,
       cd.cost, cd.attack, cd.defense, cd.rarity, cd.team, cd.image_url as imageUrl, cd.set_id as setId,
       COALESCE(c.quantity_en, 0) as quantityEn,
@@ -102,7 +102,7 @@ export async function searchCards(query: string, filters?: {
 
 // --- Collection ---
 export async function getCollectionCards() {
-  const rows = db.all(sql`
+  const rows = await db.all(sql`
     SELECT cd.id, cd.card_number as cardNumber, cd.name, cd.version, cd.card_type as cardType,
       cd.cost, cd.attack, cd.defense, cd.rarity, cd.team, cd.image_url as imageUrl, cd.set_id as setId,
       c.quantity_en as quantityEn, c.quantity_fr as quantityFr, c.condition, c.notes
@@ -120,7 +120,7 @@ export async function getCollectionCards() {
 }
 
 export async function getMissingCards(setId: number) {
-  const rows = db.all(sql`
+  const rows = await db.all(sql`
     SELECT cd.id, cd.card_number as cardNumber, cd.name, cd.version, cd.card_type as cardType,
       cd.cost, cd.attack, cd.defense, cd.rarity, cd.team, cd.image_url as imageUrl
     FROM cards cd
@@ -137,7 +137,7 @@ export async function getMissingCards(setId: number) {
 }
 
 export async function getCollectionQuantities(cardId: number) {
-  const rows = db.all(sql`
+  const rows = await db.all(sql`
     SELECT quantity_en as en, quantity_fr as fr
     FROM collection WHERE card_id = ${cardId} LIMIT 1
   `) as Array<{ en: number; fr: number }>;
@@ -146,7 +146,7 @@ export async function getCollectionQuantities(cardId: number) {
 
 // --- Stats ---
 export async function getCollectionStats() {
-  const rows = db.all(sql`
+  const rows = await db.all(sql`
     SELECT
       (SELECT COUNT(*) FROM cards) as totalCards,
       (SELECT COUNT(*) FROM collection WHERE (quantity_en + quantity_fr) > 0) as ownedCards,
@@ -157,21 +157,21 @@ export async function getCollectionStats() {
 
 // --- Filter options ---
 export async function getDistinctTeams() {
-  const rows = db.all(sql`
+  const rows = await db.all(sql`
     SELECT DISTINCT team FROM cards WHERE team IS NOT NULL AND team != '' ORDER BY team ASC
   `) as Array<{ team: string }>;
   return rows.map(r => r.team);
 }
 
 export async function getDistinctCardTypes() {
-  const rows = db.all(sql`
+  const rows = await db.all(sql`
     SELECT DISTINCT card_type FROM cards WHERE card_type IS NOT NULL ORDER BY card_type ASC
   `) as Array<{ card_type: string }>;
   return rows.map(r => r.card_type);
 }
 
 export async function getDistinctRarities() {
-  const rows = db.all(sql`
+  const rows = await db.all(sql`
     SELECT DISTINCT rarity FROM cards WHERE rarity IS NOT NULL ORDER BY rarity ASC
   `) as Array<{ rarity: string }>;
   return rows.map(r => r.rarity);
