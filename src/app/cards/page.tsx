@@ -88,7 +88,7 @@ export default async function CardsPage({
           </thead>
           <tbody className="divide-y">
             {cards.map((card) => (
-              <tr key={card.id} className={`hover:bg-gray-50 ${(card.quantityEn + card.quantityFr) > 0 ? "bg-green-50/50" : ""}`}>
+              <tr key={card.id} className={`hover:bg-gray-50 ${(card.quantityEn + card.quantityFr + card.quantityEnFoil + card.quantityFrFoil) > 0 ? "bg-green-50/50" : ""}`}>
                 <td className="px-3 py-1">
                   <Link href={`/cards/${card.id}`}>
                     {card.imageUrl ? (
@@ -117,7 +117,7 @@ export default async function CardsPage({
                 </td>
                 <td className="px-3 py-2 text-xs text-gray-700">{card.rarity}</td>
                 <td className="px-3 py-2">
-                  <QuantitySelector cardId={card.id} quantityEn={card.quantityEn} quantityFr={card.quantityFr} compact />
+                  <QuantitySelector cardId={card.id} quantityEn={card.quantityEn} quantityFr={card.quantityFr} quantityEnFoil={card.quantityEnFoil} quantityFrFoil={card.quantityFrFoil} compact />
                 </td>
               </tr>
             ))}

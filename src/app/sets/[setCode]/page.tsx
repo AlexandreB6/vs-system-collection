@@ -25,7 +25,7 @@ export default async function SetDetailPage({
   if (!set) notFound();
 
   const cards = await getCardsBySet(set.id);
-  const ownedCount = cards.filter(c => (c.quantityEn + c.quantityFr) > 0).length;
+  const ownedCount = cards.filter(c => (c.quantityEn + c.quantityFr + c.quantityEnFoil + c.quantityFrFoil) > 0).length;
 
   return (
     <div className="space-y-6">
@@ -56,7 +56,7 @@ export default async function SetDetailPage({
             {cards.map((card) => (
               <tr
                 key={card.id}
-                className={`hover:bg-gray-50 ${(card.quantityEn + card.quantityFr) > 0 ? "bg-green-50/50" : ""}`}
+                className={`hover:bg-gray-50 ${(card.quantityEn + card.quantityFr + card.quantityEnFoil + card.quantityFrFoil) > 0 ? "bg-green-50/50" : ""}`}
               >
                 <td className="px-3 py-1">
                   <Link href={`/cards/${card.id}`}>
@@ -89,7 +89,7 @@ export default async function SetDetailPage({
                 <td className="px-3 py-2 text-gray-600 text-xs">{card.team ?? "-"}</td>
                 <td className={`px-3 py-2 text-xs ${rarityColor(card.rarity)}`}>{card.rarity}</td>
                 <td className="px-3 py-2">
-                  <QuantitySelector cardId={card.id} quantityEn={card.quantityEn} quantityFr={card.quantityFr} compact />
+                  <QuantitySelector cardId={card.id} quantityEn={card.quantityEn} quantityFr={card.quantityFr} quantityEnFoil={card.quantityEnFoil} quantityFrFoil={card.quantityFrFoil} compact />
                 </td>
               </tr>
             ))}

@@ -9,7 +9,7 @@ export async function getAllSets() {
       COALESCE((
         SELECT COUNT(*) FROM collection c
         INNER JOIN cards cd ON c.card_id = cd.id
-        WHERE cd.set_id = s.id AND (c.quantity_en + c.quantity_fr) > 0
+        WHERE cd.set_id = s.id AND (c.quantity_en + c.quantity_fr + c.quantity_en_foil + c.quantity_fr_foil) > 0
       ), 0) as ownedCount
     FROM sets s
     ORDER BY s.release_date ASC
@@ -31,7 +31,9 @@ export async function getCardsBySet(setId: number) {
     SELECT cd.id, cd.card_number as cardNumber, cd.name, cd.version, cd.card_type as cardType,
       cd.cost, cd.attack, cd.defense, cd.flight, cd.range, cd.team, cd.rarity, cd.image_url as imageUrl,
       COALESCE(c.quantity_en, 0) as quantityEn,
-      COALESCE(c.quantity_fr, 0) as quantityFr
+      COALESCE(c.quantity_fr, 0) as quantityFr,
+      COALESCE(c.quantity_en_foil, 0) as quantityEnFoil,
+      COALESCE(c.quantity_fr_foil, 0) as quantityFrFoil
     FROM cards cd
     LEFT JOIN collection c ON c.card_id = cd.id
     WHERE cd.set_id = ${setId}
@@ -40,7 +42,7 @@ export async function getCardsBySet(setId: number) {
     id: number; cardNumber: string; name: string; version: string | null; cardType: string | null;
     cost: number | null; attack: number | null; defense: number | null; flight: number | null;
     range: number | null; team: string | null; rarity: string | null; imageUrl: string | null;
-    quantityEn: number; quantityFr: number;
+    quantityEn: number; quantityFr: number; quantityEnFoil: number; quantityFrFoil: number;
   }>;
   return rows;
 }
@@ -85,7 +87,9 @@ export async function searchCards(query: string, filters?: {
     SELECT cd.id, cd.card_number as cardNumber, cd.name, cd.version, cd.card_type as cardType,
       cd.cost, cd.attack, cd.defense, cd.rarity, cd.team, cd.image_url as imageUrl, cd.set_id as setId,
       COALESCE(c.quantity_en, 0) as quantityEn,
-      COALESCE(c.quantity_fr, 0) as quantityFr
+      COALESCE(c.quantity_fr, 0) as quantityFr,
+      COALESCE(c.quantity_en_foil, 0) as quantityEnFoil,
+      COALESCE(c.quantity_fr_foil, 0) as quantityFrFoil
     FROM cards cd
     LEFT JOIN collection c ON c.card_id = cd.id
     WHERE ${whereClause}
@@ -95,7 +99,7 @@ export async function searchCards(query: string, filters?: {
     id: number; cardNumber: string; name: string; version: string | null; cardType: string | null;
     cost: number | null; attack: number | null; defense: number | null; rarity: string | null;
     team: string | null; imageUrl: string | null; setId: number | null;
-    quantityEn: number; quantityFr: number;
+    quantityEn: number; quantityFr: number; quantityEnFoil: number; quantityFrFoil: number;
   }>;
   return rows;
 }
@@ -105,16 +109,22 @@ export async function getCollectionCards() {
   const rows = await db.all(sql`
     SELECT cd.id, cd.card_number as cardNumber, cd.name, cd.version, cd.card_type as cardType,
       cd.cost, cd.attack, cd.defense, cd.rarity, cd.team, cd.image_url as imageUrl, cd.set_id as setId,
-      c.quantity_en as quantityEn, c.quantity_fr as quantityFr, c.condition, c.notes
+      s.code as setCode, s.name as setName, s.release_date as setReleaseDate,
+      c.quantity_en as quantityEn, c.quantity_fr as quantityFr,
+      c.quantity_en_foil as quantityEnFoil, c.quantity_fr_foil as quantityFrFoil,
+      c.condition, c.notes
     FROM collection c
     INNER JOIN cards cd ON c.card_id = cd.id
-    WHERE (c.quantity_en + c.quantity_fr) > 0
-    ORDER BY cd.name ASC
+    LEFT JOIN sets s ON cd.set_id = s.id
+    WHERE (c.quantity_en + c.quantity_fr + c.quantity_en_foil + c.quantity_fr_foil) > 0
+    ORDER BY s.release_date ASC, cd.card_number ASC
   `) as Array<{
     id: number; cardNumber: string; name: string; version: string | null; cardType: string | null;
     cost: number | null; attack: number | null; defense: number | null; rarity: string | null;
     team: string | null; imageUrl: string | null; setId: number | null;
-    quantityEn: number; quantityFr: number; condition: string | null; notes: string | null;
+    setCode: string | null; setName: string | null; setReleaseDate: string | null;
+    quantityEn: number; quantityFr: number; quantityEnFoil: number; quantityFrFoil: number;
+    condition: string | null; notes: string | null;
   }>;
   return rows;
 }
@@ -126,7 +136,7 @@ export async function getMissingCards(setId: number) {
     FROM cards cd
     LEFT JOIN collection c ON c.card_id = cd.id
     WHERE cd.set_id = ${setId}
-      AND COALESCE(c.quantity_en, 0) + COALESCE(c.quantity_fr, 0) = 0
+      AND COALESCE(c.quantity_en, 0) + COALESCE(c.quantity_fr, 0) + COALESCE(c.quantity_en_foil, 0) + COALESCE(c.quantity_fr_foil, 0) = 0
     ORDER BY cd.card_number ASC
   `) as Array<{
     id: number; cardNumber: string; name: string; version: string | null; cardType: string | null;
@@ -138,10 +148,11 @@ export async function getMissingCards(setId: number) {
 
 export async function getCollectionQuantities(cardId: number) {
   const rows = await db.all(sql`
-    SELECT quantity_en as en, quantity_fr as fr
+    SELECT quantity_en as en, quantity_fr as fr,
+      quantity_en_foil as enFoil, quantity_fr_foil as frFoil
     FROM collection WHERE card_id = ${cardId} LIMIT 1
-  `) as Array<{ en: number; fr: number }>;
-  return rows[0] ?? { en: 0, fr: 0 };
+  `) as Array<{ en: number; fr: number; enFoil: number; frFoil: number }>;
+  return rows[0] ?? { en: 0, fr: 0, enFoil: 0, frFoil: 0 };
 }
 
 // --- Stats ---
@@ -149,8 +160,8 @@ export async function getCollectionStats() {
   const rows = await db.all(sql`
     SELECT
       (SELECT COUNT(*) FROM cards) as totalCards,
-      (SELECT COUNT(*) FROM collection WHERE (quantity_en + quantity_fr) > 0) as ownedCards,
-      COALESCE((SELECT SUM(quantity_en + quantity_fr) FROM collection WHERE (quantity_en + quantity_fr) > 0), 0) as totalQuantity
+      (SELECT COUNT(*) FROM collection WHERE (quantity_en + quantity_fr + quantity_en_foil + quantity_fr_foil) > 0) as ownedCards,
+      COALESCE((SELECT SUM(quantity_en + quantity_fr + quantity_en_foil + quantity_fr_foil) FROM collection WHERE (quantity_en + quantity_fr + quantity_en_foil + quantity_fr_foil) > 0), 0) as totalQuantity
   `) as Array<{ totalCards: number; ownedCards: number; totalQuantity: number }>;
   return rows[0];
 }

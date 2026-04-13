@@ -5,14 +5,23 @@ import { collection } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
-export async function updateCardQuantity(cardId: number, lang: "en" | "fr", quantity: number) {
+export type QuantityKind = "en" | "fr" | "en_foil" | "fr_foil";
+
+const FIELD: Record<QuantityKind, "quantityEn" | "quantityFr" | "quantityEnFoil" | "quantityFrFoil"> = {
+  en: "quantityEn",
+  fr: "quantityFr",
+  en_foil: "quantityEnFoil",
+  fr_foil: "quantityFrFoil",
+};
+
+export async function updateCardQuantity(cardId: number, kind: QuantityKind, quantity: number) {
   const [existing] = await db
     .select()
     .from(collection)
     .where(eq(collection.cardId, cardId))
     .limit(1);
 
-  const field = lang === "en" ? "quantityEn" : "quantityFr";
+  const field = FIELD[kind];
 
   if (existing) {
     await db
@@ -22,8 +31,10 @@ export async function updateCardQuantity(cardId: number, lang: "en" | "fr", quan
   } else {
     await db.insert(collection).values({
       cardId,
-      quantityEn: lang === "en" ? quantity : 0,
-      quantityFr: lang === "fr" ? quantity : 0,
+      quantityEn: kind === "en" ? quantity : 0,
+      quantityFr: kind === "fr" ? quantity : 0,
+      quantityEnFoil: kind === "en_foil" ? quantity : 0,
+      quantityFrFoil: kind === "fr_foil" ? quantity : 0,
       updatedAt: new Date().toISOString(),
     });
   }

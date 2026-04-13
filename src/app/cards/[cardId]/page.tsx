@@ -128,7 +128,7 @@ export default async function CardDetailPage({
           {/* Collection */}
           <div className="bg-white rounded-lg shadow p-4">
             <div className="text-sm font-medium mb-2">Collection</div>
-            <QuantitySelector cardId={card.id} quantityEn={quantities.en} quantityFr={quantities.fr} />
+            <QuantitySelector cardId={card.id} quantityEn={quantities.en} quantityFr={quantities.fr} quantityEnFoil={quantities.enFoil} quantityFrFoil={quantities.frFoil} />
           </div>
         </div>
       </div>

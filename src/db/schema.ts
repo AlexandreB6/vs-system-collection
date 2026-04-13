@@ -40,6 +40,8 @@ export const collection = sqliteTable("collection", {
   cardId: integer("card_id").references(() => cards.id).notNull().unique(),
   quantityEn: integer("quantity_en").default(0).notNull(),
   quantityFr: integer("quantity_fr").default(0).notNull(),
+  quantityEnFoil: integer("quantity_en_foil").default(0).notNull(),
+  quantityFrFoil: integer("quantity_fr_foil").default(0).notNull(),
   condition: text("condition"),
   notes: text("notes"),
   updatedAt: text("updated_at"),
