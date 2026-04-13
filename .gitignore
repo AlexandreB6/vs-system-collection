@@ -33,9 +33,20 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
+# database
+/data/*.db
+/data/*.db-wal
+/data/*.db-shm
+
+# scraper checkpoints
+/scripts/*.json
+
 # vercel
 .vercel
 
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# claude code local
+/.claude/settings.local.json
