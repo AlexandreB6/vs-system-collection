@@ -15,29 +15,24 @@ const FIELD: Record<QuantityKind, "quantityEn" | "quantityFr" | "quantityEnFoil"
 };
 
 export async function updateCardQuantity(cardId: number, kind: QuantityKind, quantity: number) {
-  const [existing] = await db
-    .select()
-    .from(collection)
-    .where(eq(collection.cardId, cardId))
-    .limit(1);
-
   const field = FIELD[kind];
+  const now = new Date().toISOString();
 
-  if (existing) {
-    await db
-      .update(collection)
-      .set({ [field]: quantity, updatedAt: new Date().toISOString() })
-      .where(eq(collection.cardId, cardId));
-  } else {
-    await db.insert(collection).values({
+  // Upsert in one round-trip: insert with the right field set, or update on conflict.
+  await db
+    .insert(collection)
+    .values({
       cardId,
       quantityEn: kind === "en" ? quantity : 0,
       quantityFr: kind === "fr" ? quantity : 0,
       quantityEnFoil: kind === "en_foil" ? quantity : 0,
       quantityFrFoil: kind === "fr_foil" ? quantity : 0,
-      updatedAt: new Date().toISOString(),
+      updatedAt: now,
+    })
+    .onConflictDoUpdate({
+      target: collection.cardId,
+      set: { [field]: quantity, updatedAt: now },
     });
-  }
 
   revalidatePath("/", "layout");
 }
